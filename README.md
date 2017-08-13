@@ -42,4 +42,4 @@ Apache Maven 3.5.0
 * Google Guava
 * JUnit
 
-See [pom.xml](pom.xml)
+See [pom.xml](simple-service/pom.xml)
