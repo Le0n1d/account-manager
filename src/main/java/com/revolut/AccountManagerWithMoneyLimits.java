@@ -12,8 +12,6 @@ import java.util.Map;
  * accounts.
  * <p/>
  * Accounts can have between <code>minMoney</code> and <code>maxMoney</code>, inclusive.
- * <p/>
- * The class is not thread-safe.
  */
 public class AccountManagerWithMoneyLimits implements AccountManager {
     private static final String MESSAGE_ACCOUNT_DOES_NOT_EXIST =
@@ -46,7 +44,7 @@ public class AccountManagerWithMoneyLimits implements AccountManager {
 
     /** {@inheritDoc} */
     @Override
-    public Account openAccount(long ownerId) {
+    public synchronized Account openAccount(long ownerId) {
         Account account = new Account(maxAccountId++, ownerId, 0.0);
         accountsMap.put(account.getId(), account);
         return account;
@@ -54,14 +52,14 @@ public class AccountManagerWithMoneyLimits implements AccountManager {
 
     /** {@inheritDoc} */
     @Override
-    public Account getAccount(long accountId) throws AccountOperationException {
+    public synchronized Account getAccount(long accountId) throws AccountOperationException {
         checkAccountExists(accountId);
         return accountsMap.get(accountId);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void deposit(long accountId, double money) throws AccountOperationException {
+    public synchronized void deposit(long accountId, double money) throws AccountOperationException {
         checkPositiveMoney(money);
         checkCanUpdateMoney(accountId, money);
         updateMoney(accountId, money);
@@ -69,7 +67,7 @@ public class AccountManagerWithMoneyLimits implements AccountManager {
 
     /** {@inheritDoc} */
     @Override
-    public void withdraw(long accountId, double money) throws AccountOperationException {
+    public synchronized void withdraw(long accountId, double money) throws AccountOperationException {
         checkPositiveMoney(money);
         checkCanUpdateMoney(accountId, -money);
         updateMoney(accountId, -money);
@@ -77,7 +75,7 @@ public class AccountManagerWithMoneyLimits implements AccountManager {
 
     /** {@inheritDoc} */
     @Override
-    public void transfer(long sourceAccountId, long targetAccountId, double money) throws AccountOperationException {
+    public synchronized void transfer(long sourceAccountId, long targetAccountId, double money) throws AccountOperationException {
         if (sourceAccountId == targetAccountId) {
             throw new AccountOperationException(MESSAGE_SOURCE_AND_TARGET_ACCOUNTS_MUST_BE_DIFFERENT);
         } else {
