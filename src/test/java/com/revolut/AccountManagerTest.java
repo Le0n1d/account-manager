@@ -1,8 +1,10 @@
 package com.revolut;
 
+import com.google.common.collect.Lists;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.ws.rs.BadRequestException;
@@ -15,6 +17,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import java.util.List;
 
 import static com.revolut.AccountManagerConstants.ACCOUNT_MANAGER;
 import static com.revolut.AccountManagerConstants.PATH_DEPOSIT;
@@ -184,6 +188,53 @@ public class AccountManagerTest {
         Account account = openAccountForOwner(TEST_OWNER_ID);
         double money = AccountManagerAPI.MIN_MONEY - 1;
         withdraw(account.getId(), money);
+    }
+
+    private final class OpenAndVerifyAccount implements Runnable {
+        private final int accountsToCreate;
+
+        OpenAndVerifyAccount(int accountsToCreate) {
+            this.accountsToCreate = accountsToCreate;
+        }
+
+        @Override
+        public void run() {
+            try {
+                for (int i = 0; i < accountsToCreate; i++) {
+                    Account account = openAccountForOwner(1);
+                    getAccount(account.getId());
+                    if (account.getId() % 1000 == 0) {
+                        System.out.println(account.getId());
+                    }
+                }
+            } catch (Exception e) {
+                System.out.printf("Exception!!!");
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+    @Test
+    @Ignore("Performance test")
+    public void testRequestsPerSecond() throws Exception {
+        final int ACCOUNTS_TO_CREATE = 5000;
+        final int THREADS_TO_CREATE = 64;
+        final long timestamp = System.currentTimeMillis();
+        final List<Thread> threads = Lists.newArrayList();
+
+        for (int i = 0; i < THREADS_TO_CREATE; i++) {
+            Thread thread = new Thread(new OpenAndVerifyAccount(ACCOUNTS_TO_CREATE));
+            thread.start();
+            threads.add(thread);
+        }
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        long timeTakenMillis = System.currentTimeMillis() - timestamp;
+
+        /* Each thread does two requests, one to create an account, and one to query. */
+        System.out.println("Requests per second " + 1e3 * (ACCOUNTS_TO_CREATE * THREADS_TO_CREATE * 2) / timeTakenMillis);
+        System.out.println("Created " + ACCOUNTS_TO_CREATE * THREADS_TO_CREATE + " accounts in " + timeTakenMillis + " millis");
     }
 
     private Account openAccountForOwner(long ownerId) {

@@ -23,7 +23,7 @@ public class Main {
         /* Scan for resources in the package. */
         final ResourceConfig rc = new ResourceConfig().packages("com.revolut");
 
-        /* Create ans start Grizzly HTTP server at BASE_URI. */
+        /* Create and start Grizzly HTTP server at BASE_URI. */
         return GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
     }
 
